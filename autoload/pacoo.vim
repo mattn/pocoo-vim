@@ -6,6 +6,44 @@ let s:url = "http://paste.pocoo.org/xmlrpc/"
 let pacoo#pastes = {}
 let pacoo#styles = {}
 
+function! s:from_value(value)
+  let value = a:value
+  if value.name == 'methodResponse'
+    let param = value.childNode('params').childNodes('param')
+    if len(param) == 1
+      return s:from_value(param[0].childNode('value').childNode())
+    else
+      let ret = []
+      for v in param
+        call add(ret, s:from_value(v.childNode('value').childNode()))
+      endfor
+      return ret
+    endif
+  elseif value.name == 'string'
+    return value.value()
+  elseif value.name == 'int'
+    return 0+substitute(value.value(), "[ \n\r]", '', 'g')
+  elseif value.name == 'double'
+    return str2float(substitute(value.value(), "[ \n\r]", '', 'g'))
+  elseif value.name == 'struct'
+    let ret = {}
+    for member in value.childNodes('member')
+      let ret[member.childNode('name').value()] = s:from_value(member.childNode('value').childNode())
+    endfor
+    return ret
+  elseif value.name == 'array'
+    let ret = []
+    for v in value.childNode('data').childNodes('value')
+      call add(ret, s:from_value(v.childNode()))
+    endfor
+    return ret
+  elseif value.name == 'nil'
+    return 0
+  else
+    throw "unknown type: ".value.name
+  endif
+endfunction
+
 function! s:to_value(content)
   if type(a:content) == 4
     let struct = xml#createElement("struct")
@@ -90,6 +128,7 @@ function! pacoo#pastes.getPaste(id) dict
     return ret
   endif
 endfunction
+"echo pacoo#pastes.getPaste(23)
 
 function! pacoo#pastes.getLanguages() dict
   let methodCall = xml#createElement("methodCall")
@@ -110,6 +149,7 @@ function! pacoo#pastes.getLanguages() dict
     return ret
   endif
 endfunction
+"echo pacoo#pastes.getLanguages()
 
 function! pacoo#pastes.getDiff(old_id, new_id) dict
   let methodCall = xml#createElement("methodCall")
@@ -134,6 +174,7 @@ function! pacoo#pastes.getDiff(old_id, new_id) dict
     return dom.value()
   endif
 endfunction
+"echo pacoo#pastes.getDiff(23,24)
 
 function! pacoo#pastes.getLast() dict
   let methodCall = xml#createElement("methodCall")
@@ -146,14 +187,10 @@ function! pacoo#pastes.getLast() dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    let ret = {}
-    let struct = dom.find('struct')
-    for member in struct.childNodes('member')
-      let ret[member.childNode('name').value()] = member.childNode('value').value()
-    endfor
-    return ret
+    return s:from_value(dom)
   endif
 endfunction
+"echo pacoo#pastes.getLast()
 
 function! pacoo#pastes.getRecent(...) dict
   let amount = a:0 > 0 ? a:1 : 5
@@ -174,19 +211,10 @@ function! pacoo#pastes.getRecent(...) dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    let ret = []
-    let values = dom.find('array').childNode('data').childNodes('value')
-    for v in values
-      let entry = {}
-      let struct = v.childNode('struct')
-      for member in struct.childNodes('member')
-        let entry[member.childNode('name').value()] = member.childNode('value').value()
-      endfor
-      call add(ret, entry)
-    endfor
-    return ret
+    return s:from_value(dom)
   endif
 endfunction
+"echo pacoo#pastes.getRecent(2)
 
 function! pacoo#styles.getStyles() dict
   let methodCall = xml#createElement("methodCall")
@@ -199,18 +227,10 @@ function! pacoo#styles.getStyles() dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    let ret = []
-    let values = dom.find('array').childNode('data').childNodes('value')
-    for v in values
-      let retv = []
-      let vv = v.childNode('array').childNode('data').childNodes('value')
-	  call add(retv, vv[0].value())
-	  call add(retv, vv[1].value())
-      call add(ret, retv)
-    endfor
-    return ret
+    return s:from_value(dom)
   endif
 endfunction
+"echo pacoo#styles.getStyles()
 
 function! pacoo#styles.getStylesheet(name) dict
   let methodCall = xml#createElement("methodCall")
@@ -232,14 +252,10 @@ function! pacoo#styles.getStylesheet(name) dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    let ret = []
-    let values = dom.find('array').childNode('data').childNodes('value')
-    for v in values
-      call add(ret, v.value())
-    endfor
-    return ret
+    return s:from_value(dom)
   endif
 endfunction
+"echo pacoo#styles.getStylesheet("pastie")
 
 function! pacoo#pastes.newPaste(language, code, ...) dict
   let language = a:language
