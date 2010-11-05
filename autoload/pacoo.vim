@@ -120,12 +120,7 @@ function! pacoo#pastes.getPaste(id) dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    let ret = {}
-    let struct = dom.find('struct')
-    for member in struct.childNodes('member')
-      let ret[member.childNode('name').value()] = member.childNode('value').value()
-    endfor
-    return ret
+    return s:from_value(dom)
   endif
 endfunction
 "echo pacoo#pastes.getPaste(23)
@@ -141,12 +136,7 @@ function! pacoo#pastes.getLanguages() dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    let ret = {}
-    let struct = dom.find('struct')
-    for member in struct.childNodes('member')
-      let ret[member.childNode('name').value()] = member.childNode('value').value()
-    endfor
-    return ret
+    return s:from_value(dom)
   endif
 endfunction
 "echo pacoo#pastes.getLanguages()
@@ -171,7 +161,7 @@ function! pacoo#pastes.getDiff(old_id, new_id) dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    return dom.value()
+    return s:from_value(dom)
   endif
 endfunction
 "echo pacoo#pastes.getDiff(23,24)
@@ -283,9 +273,10 @@ function! pacoo#pastes.newPaste(language, code, ...) dict
   if len(dom.find('fault'))
     throw s:to_fault(dom)
   else
-    return substitute(dom.value(), "[ \n\r]", '', 'g')
+    return s:from_value(dom)
   endif
 endfunction
+"echo pacoo#pastes.newPaste("c", "int main(){printf(\"foo\\n\")}")
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
