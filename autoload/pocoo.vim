@@ -3,7 +3,7 @@ set cpo&vim
 
 let s:uri = "http://paste.pocoo.org/xmlrpc/"
 
-let pocoo#pastes = xmlrpc#wrap([
+let pocoo#pastes = webapi#xmlrpc#wrap([
 \ {'uri': s:uri, 'name': 'pastes.getPaste', 'argnames': ['id'], 'alias': 'getPaste'},
 \ {'uri': s:uri, 'name': 'pastes.getLanguages', 'argnames': [], 'alias': 'getLanguages'},
 \ {'uri': s:uri, 'name': 'pastes.getDiff', 'argnames': ['old_id','new_id'], 'alias': 'getDiff'},
@@ -12,7 +12,7 @@ let pocoo#pastes = xmlrpc#wrap([
 \ {'uri': s:uri, 'name': 'pastes.newPaste', 'argnames': ['language','code','...'], 'alias': 'newPost'},
 \])
 
-let pocoo#styles = xmlrpc#wrap([
+let pocoo#styles = webapi#xmlrpc#wrap([
 \ {'uri': s:uri, 'name': 'styles.getStyles', 'argnames': [], 'alias': 'getStyles'},
 \ {'uri': s:uri, 'name': 'styles.getStylesheet', 'argnames': ['name'], 'alias': 'getStylesheet'},
 \])
